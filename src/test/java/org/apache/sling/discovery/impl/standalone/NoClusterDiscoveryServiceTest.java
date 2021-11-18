@@ -57,27 +57,8 @@ public class NoClusterDiscoveryServiceTest {
         }
     }
 
-    private Object setField(final Object obj, final String fieldName, final Object value) {
-        Class<?> clazz = obj.getClass();
-        while ( clazz != null ) {
-            try {
-                final Field field = clazz.getDeclaredField(fieldName);
-                field.setAccessible(true);
-
-                field.set(obj, value);
-                return null;
-            } catch ( final Exception ignore ) {
-                // ignore
-            }
-            clazz = clazz.getSuperclass();
-        }
-        throw new RuntimeException("Field " + fieldName + " not found on object " + obj);
-    }
-
-    private DiscoveryService createService(final boolean activate) {
-        final DiscoveryService service = new NoClusterDiscoveryService();
-
-        setField(service, "settingsService", new SlingSettingsService() {
+    private DiscoveryService createService() {
+        final DiscoveryService service = new NoClusterDiscoveryService(new SlingSettingsService() {
 
             @Override
             public String getSlingId() {
@@ -104,15 +85,12 @@ public class NoClusterDiscoveryServiceTest {
                 return null;
             }
         });
-        if ( activate ) {
-            invoke(service, "activate");
-        }
 
         return service;
     }
 
     @Test public void testBasics() throws Exception {
-        final DiscoveryService service = this.createService(true);
+        final DiscoveryService service = this.createService();
 
         assertNotNull(service.getTopology());
         assertTrue(service.getTopology().isCurrent());
@@ -122,8 +100,8 @@ public class NoClusterDiscoveryServiceTest {
         assertNull(service.getTopology());
     }
 
-    @Test public void testListenerAfter() throws Exception {
-        final DiscoveryService service = this.createService(true);
+    @Test public void testListener() throws Exception {
+        final DiscoveryService service = this.createService();
 
         final List<TopologyEvent> events = new ArrayList<TopologyEvent>();
 
@@ -135,28 +113,6 @@ public class NoClusterDiscoveryServiceTest {
             }
         };
         invoke(service, "bindTopologyEventListener", new Class[] {TopologyEventListener.class}, new Object[] {listener});
-        assertEquals(1, events.size());
-        assertEquals(TopologyEvent.Type.TOPOLOGY_INIT, events.get(0).getType());
-        assertNotNull(events.get(0).getNewView());
-        assertNull(events.get(0).getOldView());
-    }
-
-    @Test public void testListenerBefore() throws Exception {
-        final DiscoveryService service = this.createService(false);
-
-        final List<TopologyEvent> events = new ArrayList<TopologyEvent>();
-
-        final TopologyEventListener listener = new TopologyEventListener() {
-
-            @Override
-            public void handleTopologyEvent(final TopologyEvent event) {
-                events.add(event);
-            }
-        };
-        invoke(service, "bindTopologyEventListener", new Class[] {TopologyEventListener.class}, new Object[] {listener});
-        assertEquals(0, events.size());
-
-        invoke(service, "activate");
         assertEquals(1, events.size());
         assertEquals(TopologyEvent.Type.TOPOLOGY_INIT, events.get(0).getType());
         assertNotNull(events.get(0).getNewView());
@@ -164,7 +120,7 @@ public class NoClusterDiscoveryServiceTest {
     }
 
     @Test public void testPropertyChanges() throws Exception {
-        final DiscoveryService service = this.createService(true);
+        final DiscoveryService service = this.createService();
 
         final List<TopologyEvent> events = new ArrayList<TopologyEvent>();
 

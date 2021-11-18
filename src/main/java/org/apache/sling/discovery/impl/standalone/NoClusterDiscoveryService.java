@@ -25,13 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.apache.felix.scr.annotations.ReferencePolicy;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.discovery.DiscoveryService;
 import org.apache.sling.discovery.InstanceDescription;
 import org.apache.sling.discovery.PropertyProvider;
@@ -40,6 +33,12 @@ import org.apache.sling.discovery.TopologyEvent.Type;
 import org.apache.sling.discovery.TopologyEventListener;
 import org.apache.sling.discovery.TopologyView;
 import org.apache.sling.settings.SlingSettingsService;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +46,7 @@ import org.slf4j.LoggerFactory;
  * This is a simple implementation of the discovery service
  * which can be used for a cluster less installation (= single instance).
  */
-@Component(immediate=true) // immediate as this is component is also handling the listeners
-@Service(value = {DiscoveryService.class})
+@Component(immediate=true, service = {DiscoveryService.class}) // immediate as this is component is also handling the listeners
 public class NoClusterDiscoveryService implements DiscoveryService {
 
     /** The logger. */
@@ -57,20 +55,16 @@ public class NoClusterDiscoveryService implements DiscoveryService {
     /**
      * Sling settings service to get the Sling ID and run modes.
      */
-    @Reference
-    private SlingSettingsService settingsService;
+    private final SlingSettingsService settingsService;
 
     /**
      * All topology event listeners.
      */
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL_MULTIPLE, policy = ReferencePolicy.DYNAMIC)
     private TopologyEventListener[] listeners = new TopologyEventListener[0];
 
     /**
      * All property providers.
      */
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL_MULTIPLE, policy = ReferencePolicy.DYNAMIC,
-               referenceInterface=PropertyProvider.class, updated="updatedPropertyProvider")
     private List<ProviderInfo> providerInfos = new ArrayList<ProviderInfo>();
 
     /**
@@ -90,9 +84,10 @@ public class NoClusterDiscoveryService implements DiscoveryService {
      * Create a new description.
      */
     @Activate
-    protected void activate() {
+    public NoClusterDiscoveryService(@Reference final SlingSettingsService slingSettingsService) {
         logger.debug("NoClusterDiscoveryService started.");
-        createNewView(Type.TOPOLOGY_INIT, true);
+        this.settingsService = slingSettingsService;
+        this.createNewView(Type.TOPOLOGY_INIT, false);
     }
 
     /**
@@ -101,10 +96,8 @@ public class NoClusterDiscoveryService implements DiscoveryService {
     @Deactivate
     protected void deactivate() {
         synchronized ( lock ) {
-            if ( this.currentTopologyView != null ) {
-                this.currentTopologyView.invalidate();
-                this.currentTopologyView = null;
-            }
+            this.currentTopologyView.invalidate();
+            this.currentTopologyView = null;
             this.cachedProperties = null;
         }
         logger.debug("NoClusterDiscoveryService stopped.");
@@ -139,6 +132,8 @@ public class NoClusterDiscoveryService implements DiscoveryService {
     /**
      * Bind a new property provider.
      */
+    @Reference(cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC,
+            updated="updatedPropertyProvider")
     private void bindPropertyProvider(final PropertyProvider propertyProvider, final Map<String, Object> props) {
     	logger.debug("Binding PropertyProvider {}", propertyProvider);
 
@@ -147,10 +142,8 @@ public class NoClusterDiscoveryService implements DiscoveryService {
             this.providerInfos.add(info);
             Collections.sort(this.providerInfos);
             this.updatePropertiesCache();
-            if ( this.currentTopologyView != null ) {
-                this.createNewView(Type.PROPERTIES_CHANGED, true);
-            }
         }
+        this.createNewView(Type.PROPERTIES_CHANGED, true);
     }
 
     /**
@@ -160,10 +153,8 @@ public class NoClusterDiscoveryService implements DiscoveryService {
     private void updatedPropertyProvider(final PropertyProvider propertyProvider, final Map<String, Object> props) {
         logger.debug("Updating PropertyProvider {}", propertyProvider);
 
-        synchronized (lock) {
-            this.unbindPropertyProvider(propertyProvider, props, false);
-            this.bindPropertyProvider(propertyProvider, props);
-        }
+        this.unbindPropertyProvider(propertyProvider, props, false);
+        this.bindPropertyProvider(propertyProvider, props);
     }
 
     /**
@@ -186,10 +177,8 @@ public class NoClusterDiscoveryService implements DiscoveryService {
             final ProviderInfo info = new ProviderInfo(propertyProvider, props);
             this.providerInfos.remove(info);
             this.updatePropertiesCache();
-            if ( this.currentTopologyView != null ) {
-                this.createNewView(Type.PROPERTIES_CHANGED, inform);
-            }
         }
+        this.createNewView(Type.PROPERTIES_CHANGED, inform);
     }
 
     /**
@@ -206,20 +195,17 @@ public class NoClusterDiscoveryService implements DiscoveryService {
         }
     }
 
-    @SuppressWarnings("unused")
+    @Reference(cardinality = ReferenceCardinality.MULTIPLE, policy = ReferencePolicy.DYNAMIC)
     private void bindTopologyEventListener(final TopologyEventListener listener) {
         logger.debug("Binding TopologyEventListener {}", listener);
 
-        boolean inform = true;
         synchronized (lock) {
             final List<TopologyEventListener> currentList = new ArrayList<TopologyEventListener>(
                 Arrays.asList(listeners));
             currentList.add(listener);
             this.listeners = currentList.toArray(new TopologyEventListener[currentList.size()]);
-            if ( this.currentTopologyView != null ) {
-                listener.handleTopologyEvent(new TopologyEvent(Type.TOPOLOGY_INIT, null, this.currentTopologyView));
-            }
         }
+        listener.handleTopologyEvent(new TopologyEvent(Type.TOPOLOGY_INIT, null, this.currentTopologyView));
     }
 
     @SuppressWarnings("unused")
