@@ -130,7 +130,7 @@ public class NoClusterDiscoveryService implements DiscoveryService {
             
             // If always offline is enabled, mark the topology as not current
             if (this.alwaysOffline) {
-                this.currentTopologyView.setNotCurrent();
+                this.currentTopologyView.invalidate();
             }
             
             registeredServices = this.listeners;
