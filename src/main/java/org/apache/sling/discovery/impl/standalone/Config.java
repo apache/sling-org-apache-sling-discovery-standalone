@@ -32,7 +32,7 @@ public @interface Config {
 
     @AttributeDefinition(
         name = "Always Offline",
-        description = "When enabled, this instance will always report itself as offline/inactive in the topology"
+        description = "When enabled, it will never report a valid topology and no TOPOLOGY_INIT events will be sent to TopologyEventListeners."
     )
     boolean always_offline() default false;
-} 
+}

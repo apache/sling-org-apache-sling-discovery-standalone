@@ -29,17 +29,10 @@ public class InstanceDescriptionImpl implements InstanceDescription {
     private final String id;
 
     private final Map<String, String> properties;
-    
-    private final boolean alwaysOffline;
 
     public InstanceDescriptionImpl(final String id, final Map<String, String> properties) {
-        this(id, properties, false);
-    }
-
-    public InstanceDescriptionImpl(final String id, final Map<String, String> properties, final boolean alwaysOffline) {
         this.id = id;
         this.properties = Collections.unmodifiableMap(properties);
-        this.alwaysOffline = alwaysOffline;
     }
 
     @Override
@@ -49,7 +42,7 @@ public class InstanceDescriptionImpl implements InstanceDescription {
 
     @Override
     public boolean isLeader() {
-        return !alwaysOffline;
+        return true;
     }
 
     @Override

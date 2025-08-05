@@ -50,6 +50,10 @@ public class TopologyViewImpl implements TopologyView {
         this.current = false;
     }
 
+    public void setNotCurrent() {
+        this.current = false;
+    }
+
     @Override
     public Set<InstanceDescription> getInstances() {
         return Collections.singleton(this.myInstance);
