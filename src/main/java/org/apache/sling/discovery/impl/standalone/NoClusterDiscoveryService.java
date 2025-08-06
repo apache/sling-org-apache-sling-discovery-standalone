@@ -36,6 +36,7 @@ import org.apache.sling.settings.SlingSettingsService;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
  * which can be used for a cluster less installation (= single instance).
  */
 @Component(immediate=true, service = {DiscoveryService.class}) // immediate as this is component is also handling the listeners
+@Designate(ocd = Config.class)
 public class NoClusterDiscoveryService implements DiscoveryService {
 
     /** The logger. */
