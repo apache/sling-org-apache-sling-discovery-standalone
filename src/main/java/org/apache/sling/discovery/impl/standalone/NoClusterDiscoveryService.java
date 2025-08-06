@@ -36,6 +36,7 @@ import org.apache.sling.settings.SlingSettingsService;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.metatype.annotations.Designate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
  * which can be used for a cluster less installation (= single instance).
  */
 @Component(immediate=true, service = {DiscoveryService.class}) // immediate as this is component is also handling the listeners
+@Designate(ocd = Config.class)
 public class NoClusterDiscoveryService implements DiscoveryService {
 
     /** The logger. */
@@ -56,6 +58,11 @@ public class NoClusterDiscoveryService implements DiscoveryService {
      * Sling settings service to get the Sling ID and run modes.
      */
     private final SlingSettingsService settingsService;
+
+    /**
+     * Configuration flag to always report as offline.
+     */
+    private volatile boolean alwaysOffline = false;
 
     /**
      * All topology event listeners.
@@ -84,9 +91,13 @@ public class NoClusterDiscoveryService implements DiscoveryService {
      * Create a new description.
      */
     @Activate
-    public NoClusterDiscoveryService(@Reference final SlingSettingsService slingSettingsService) {
+    public NoClusterDiscoveryService(@Reference final SlingSettingsService slingSettingsService, final Config config) {
         logger.debug("NoClusterDiscoveryService started.");
         this.settingsService = slingSettingsService;
+        this.alwaysOffline = config.always_offline();
+        if (this.alwaysOffline) {
+            logger.info("Discovery service configured to always report as offline");
+        }
         this.createNewView(Type.TOPOLOGY_INIT, false);
     }
 
@@ -118,10 +129,17 @@ public class NoClusterDiscoveryService implements DiscoveryService {
             final InstanceDescription myInstanceDescription = new InstanceDescriptionImpl(this.settingsService.getSlingId(),
                     this.cachedProperties);
             this.currentTopologyView = new TopologyViewImpl(myInstanceDescription);
+            
+            // If always offline is enabled, mark the topology as not current
+            if (this.alwaysOffline) {
+                this.currentTopologyView.invalidate();
+            }
+            
             registeredServices = this.listeners;
             newView = this.currentTopologyView;
 
-            if ( inform ) {
+            // Only inform listeners if not in always offline mode
+            if ( inform && !this.alwaysOffline ) {
                 for(final TopologyEventListener da: registeredServices) {
                     da.handleTopologyEvent(new TopologyEvent(eventType, oldView, newView));
                 }
@@ -205,7 +223,10 @@ public class NoClusterDiscoveryService implements DiscoveryService {
             currentList.add(listener);
             this.listeners = currentList.toArray(new TopologyEventListener[currentList.size()]);
         }
-        listener.handleTopologyEvent(new TopologyEvent(Type.TOPOLOGY_INIT, null, this.currentTopologyView));
+        // Only send TOPOLOGY_INIT event if not in always offline mode
+        if (!this.alwaysOffline) {
+            listener.handleTopologyEvent(new TopologyEvent(Type.TOPOLOGY_INIT, null, this.currentTopologyView));
+        }
     }
 
     @SuppressWarnings("unused")

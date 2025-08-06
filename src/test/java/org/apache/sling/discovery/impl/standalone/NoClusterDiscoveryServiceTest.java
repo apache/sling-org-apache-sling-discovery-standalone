@@ -58,6 +58,10 @@ public class NoClusterDiscoveryServiceTest {
     }
 
     private DiscoveryService createService() {
+        return createService(false);
+    }
+
+    private DiscoveryService createService(boolean alwaysOffline) {
         final DiscoveryService service = new NoClusterDiscoveryService(new SlingSettingsService() {
 
             @Override
@@ -84,9 +88,23 @@ public class NoClusterDiscoveryServiceTest {
             public String getAbsolutePathWithinSlingHome(String relativePath) {
                 return null;
             }
-        });
+        }, createMockConfig(alwaysOffline));
 
         return service;
+    }
+
+    private Config createMockConfig(final boolean alwaysOffline) {
+        return new Config() {
+            @Override
+            public boolean always_offline() {
+                return alwaysOffline;
+            }
+
+            @Override
+            public Class<? extends java.lang.annotation.Annotation> annotationType() {
+                return Config.class;
+            }
+        };
     }
 
     @Test public void testBasics() throws Exception {
@@ -94,6 +112,33 @@ public class NoClusterDiscoveryServiceTest {
 
         assertNotNull(service.getTopology());
         assertTrue(service.getTopology().isCurrent());
+
+        invoke(service, "deactivate");
+
+        assertNull(service.getTopology());
+    }
+
+    @Test public void testAlwaysOffline() throws Exception {
+        final DiscoveryService service = this.createService(true);
+
+        assertNotNull(service.getTopology());
+        // When always offline is true, the topology should not be current
+        assertFalse(service.getTopology().isCurrent());
+        // The instance should still be a leader (as per Discovery API)
+        assertTrue(service.getTopology().getLocalInstance().isLeader());
+
+        invoke(service, "deactivate");
+
+        assertNull(service.getTopology());
+    }
+
+    @Test public void testAlwaysOnline() throws Exception {
+        final DiscoveryService service = this.createService(false);
+
+        assertNotNull(service.getTopology());
+        assertTrue(service.getTopology().isCurrent());
+        // When always offline is false, the instance should be a leader
+        assertTrue(service.getTopology().getLocalInstance().isLeader());
 
         invoke(service, "deactivate");
 
@@ -117,6 +162,23 @@ public class NoClusterDiscoveryServiceTest {
         assertEquals(TopologyEvent.Type.TOPOLOGY_INIT, events.get(0).getType());
         assertNotNull(events.get(0).getNewView());
         assertNull(events.get(0).getOldView());
+    }
+
+    @Test public void testListenerAlwaysOffline() throws Exception {
+        final DiscoveryService service = this.createService(true);
+
+        final List<TopologyEvent> events = new ArrayList<TopologyEvent>();
+
+        final TopologyEventListener listener = new TopologyEventListener() {
+
+            @Override
+            public void handleTopologyEvent(final TopologyEvent event) {
+                events.add(event);
+            }
+        };
+        invoke(service, "bindTopologyEventListener", new Class[] {TopologyEventListener.class}, new Object[] {listener});
+        // When always offline is true, no events should be sent
+        assertEquals(0, events.size());
     }
 
     @Test public void testPropertyChanges() throws Exception {
