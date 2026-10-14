@@ -20,10 +20,15 @@
 @Library('sling_private@feat/llmao') _
 
 // Configure a separate Pipeline job with this SCM script path and branch feat/llmao.
-// The job needs the Secret text credential llmao-pat; use Build Now for testing.
+// The job needs Secret text credentials llmao-pat and jenkins-llmao-discovery-standalone.
+// Reserve the fork's llmao/update-sling-parent-pom branch for this job; use Build Now for testing.
 slingOsgiBundleBuild(
     llmaoOnly: true,
     llmaoRebuildFrequency: '', // Manual only for now; set '@weekly' to enable cron.
     llmaoModel: 'qwen3.8-27b',
-    llmaoInput: 'Update this project to the most recent released parent POM version'
+    llmaoInput: 'Update this project to the most recent released parent POM version',
+    llmaoPublish: true,
+    llmaoForkRepository: 'rombert/sling-org-apache-sling-discovery-standalone',
+    llmaoUpstreamRepository: 'apache/sling-org-apache-sling-discovery-standalone',
+    llmaoGithubCredentialsId: 'jenkins-llmao-discovery-standalone'
 )
