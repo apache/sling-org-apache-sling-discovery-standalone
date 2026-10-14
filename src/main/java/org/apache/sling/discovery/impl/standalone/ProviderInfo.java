@@ -37,22 +37,22 @@ public class ProviderInfo implements Comparable<ProviderInfo> {
     public ProviderInfo(final PropertyProvider provider, final Map<String, Object> serviceProps) {
         this.provider = provider;
         final Object sr = serviceProps.get(Constants.SERVICE_RANKING);
-        if ( sr == null || !(sr instanceof Integer)) {
+        if (sr == null || !(sr instanceof Integer)) {
             this.ranking = 0;
         } else {
-            this.ranking = (Integer)sr;
+            this.ranking = (Integer) sr;
         }
-        this.serviceId = (Long)serviceProps.get(Constants.SERVICE_ID);
+        this.serviceId = (Long) serviceProps.get(Constants.SERVICE_ID);
         final Object namesObj = serviceProps.get(PropertyProvider.PROPERTY_PROPERTIES);
-        if ( namesObj instanceof String ) {
-            final String val = provider.getProperty((String)namesObj);
-            if ( val != null ) {
-                this.properties.put((String)namesObj, val);
+        if (namesObj instanceof String) {
+            final String val = provider.getProperty((String) namesObj);
+            if (val != null) {
+                this.properties.put((String) namesObj, val);
             }
-        } else if ( namesObj instanceof String[] ) {
-            for(final String name : (String[])namesObj ) {
+        } else if (namesObj instanceof String[]) {
+            for (final String name : (String[]) namesObj) {
                 final String val = provider.getProperty(name);
-                if ( val != null ) {
+                if (val != null) {
                     this.properties.put(name, val);
                 }
             }
@@ -65,9 +65,9 @@ public class ProviderInfo implements Comparable<ProviderInfo> {
     @Override
     public int compareTo(final ProviderInfo o) {
         // Sort by rank in ascending order.
-        if ( this.ranking < o.ranking ) {
+        if (this.ranking < o.ranking) {
             return -1; // lower rank
-        } else if (this.ranking > o.ranking ) {
+        } else if (this.ranking > o.ranking) {
             return 1; // higher rank
         }
         // If ranks are equal, then sort by service id in descending order.
@@ -76,8 +76,8 @@ public class ProviderInfo implements Comparable<ProviderInfo> {
 
     @Override
     public boolean equals(final Object obj) {
-        if ( obj instanceof ProviderInfo ) {
-            return ((ProviderInfo)obj).serviceId == this.serviceId;
+        if (obj instanceof ProviderInfo) {
+            return ((ProviderInfo) obj).serviceId == this.serviceId;
         }
         return false;
     }
