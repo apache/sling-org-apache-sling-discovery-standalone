@@ -25,5 +25,5 @@ slingOsgiBundleBuild(
     llmaoOnly: true,
     llmaoRebuildFrequency: '', // Manual only for now; set '@weekly' to enable cron.
     llmaoModel: 'qwen3.8-27b',
-    llmaoInput: 'Update this project to the most recent released parent POM version and respond only with SUCCESS or FAILURE'
+    llmaoInput: 'Update this project to the most recent released parent POM version'
 )
