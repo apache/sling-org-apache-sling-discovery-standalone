@@ -156,23 +156,43 @@ public class NoClusterDiscoveryService implements DiscoveryService {
     	logger.debug("Binding PropertyProvider {}", propertyProvider);
 
         synchronized (lock) {
-            final ProviderInfo info = new ProviderInfo(propertyProvider, props);
-            this.providerInfos.add(info);
-            Collections.sort(this.providerInfos);
-            this.updatePropertiesCache();
+            this.replaceProviderInfo(new ProviderInfo(propertyProvider, props));
         }
         this.createNewView(Type.PROPERTIES_CHANGED, true);
     }
 
     /**
      * Update a property provider.
+     * <p>
+     * The replacement is done atomically: concurrent update callbacks for the same
+     * provider (e.g. from Sling Event's JobConsumerManager) must never interleave a
+     * remove and an add, which would leave a stale duplicate snapshot behind.
      */
     @SuppressWarnings("unused")
     private void updatedPropertyProvider(final PropertyProvider propertyProvider, final Map<String, Object> props) {
         logger.debug("Updating PropertyProvider {}", propertyProvider);
 
-        this.unbindPropertyProvider(propertyProvider, props, false);
-        this.bindPropertyProvider(propertyProvider, props);
+        synchronized (lock) {
+            final ProviderInfo info = new ProviderInfo(propertyProvider, props);
+            if (!this.providerInfos.contains(info)) {
+                // already unbound, a late update must not resurrect the provider
+                logger.debug("Ignoring update for unbound PropertyProvider {}", propertyProvider);
+                return;
+            }
+            this.replaceProviderInfo(info);
+        }
+        this.createNewView(Type.PROPERTIES_CHANGED, true);
+    }
+
+    /**
+     * Replace all entries for the provider's service with the given snapshot.
+     * Must be called while holding {@link #lock}.
+     */
+    private void replaceProviderInfo(final ProviderInfo info) {
+        this.providerInfos.removeIf(info::equals);
+        this.providerInfos.add(info);
+        Collections.sort(this.providerInfos);
+        this.updatePropertiesCache();
     }
 
     /**
@@ -193,7 +213,7 @@ public class NoClusterDiscoveryService implements DiscoveryService {
 
         synchronized (lock) {
             final ProviderInfo info = new ProviderInfo(propertyProvider, props);
-            this.providerInfos.remove(info);
+            this.providerInfos.removeIf(info::equals);
             this.updatePropertiesCache();
         }
         this.createNewView(Type.PROPERTIES_CHANGED, inform);

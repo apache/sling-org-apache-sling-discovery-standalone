@@ -71,7 +71,8 @@ public class ProviderInfo implements Comparable<ProviderInfo> {
             return 1; // higher rank
         }
         // If ranks are equal, then sort by service id in descending order.
-        return (this.serviceId < o.serviceId) ? 1 : -1;
+        // Must return 0 for the same service to stay consistent with equals.
+        return Long.compare(o.serviceId, this.serviceId);
     }
 
     @Override
@@ -84,6 +85,6 @@ public class ProviderInfo implements Comparable<ProviderInfo> {
 
     @Override
     public int hashCode() {
-        return provider.hashCode();
+        return Long.hashCode(serviceId);
     }
 }
