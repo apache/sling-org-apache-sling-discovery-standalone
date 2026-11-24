@@ -18,13 +18,6 @@
  */
 package org.apache.sling.discovery.impl.standalone;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
@@ -40,6 +33,12 @@ import org.apache.sling.discovery.TopologyEventListener;
 import org.apache.sling.settings.SlingSettingsService;
 import org.junit.Test;
 import org.osgi.framework.Constants;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class NoClusterDiscoveryServiceTest {
 
@@ -62,33 +61,35 @@ public class NoClusterDiscoveryServiceTest {
     }
 
     private DiscoveryService createService(boolean alwaysOffline) {
-        final DiscoveryService service = new NoClusterDiscoveryService(new SlingSettingsService() {
+        final DiscoveryService service = new NoClusterDiscoveryService(
+                new SlingSettingsService() {
 
-            @Override
-            public String getSlingId() {
-                return "my-sling-id";
-            }
+                    @Override
+                    public String getSlingId() {
+                        return "my-sling-id";
+                    }
 
-            @Override
-            public String getSlingHomePath() {
-                return null;
-            }
+                    @Override
+                    public String getSlingHomePath() {
+                        return null;
+                    }
 
-            @Override
-            public URL getSlingHome() {
-                return null;
-            }
+                    @Override
+                    public URL getSlingHome() {
+                        return null;
+                    }
 
-            @Override
-            public Set<String> getRunModes() {
-                return null;
-            }
+                    @Override
+                    public Set<String> getRunModes() {
+                        return null;
+                    }
 
-            @Override
-            public String getAbsolutePathWithinSlingHome(String relativePath) {
-                return null;
-            }
-        }, createMockConfig(alwaysOffline));
+                    @Override
+                    public String getAbsolutePathWithinSlingHome(String relativePath) {
+                        return null;
+                    }
+                },
+                createMockConfig(alwaysOffline));
 
         return service;
     }
@@ -107,7 +108,8 @@ public class NoClusterDiscoveryServiceTest {
         };
     }
 
-    @Test public void testBasics() throws Exception {
+    @Test
+    public void testBasics() throws Exception {
         final DiscoveryService service = this.createService();
 
         assertNotNull(service.getTopology());
@@ -118,7 +120,8 @@ public class NoClusterDiscoveryServiceTest {
         assertNull(service.getTopology());
     }
 
-    @Test public void testAlwaysOffline() throws Exception {
+    @Test
+    public void testAlwaysOffline() throws Exception {
         final DiscoveryService service = this.createService(true);
 
         assertNotNull(service.getTopology());
@@ -132,7 +135,8 @@ public class NoClusterDiscoveryServiceTest {
         assertNull(service.getTopology());
     }
 
-    @Test public void testAlwaysOnline() throws Exception {
+    @Test
+    public void testAlwaysOnline() throws Exception {
         final DiscoveryService service = this.createService(false);
 
         assertNotNull(service.getTopology());
@@ -145,7 +149,8 @@ public class NoClusterDiscoveryServiceTest {
         assertNull(service.getTopology());
     }
 
-    @Test public void testListener() throws Exception {
+    @Test
+    public void testListener() throws Exception {
         final DiscoveryService service = this.createService();
 
         final List<TopologyEvent> events = new ArrayList<TopologyEvent>();
@@ -157,14 +162,16 @@ public class NoClusterDiscoveryServiceTest {
                 events.add(event);
             }
         };
-        invoke(service, "bindTopologyEventListener", new Class[] {TopologyEventListener.class}, new Object[] {listener});
+        invoke(service, "bindTopologyEventListener", new Class[] {TopologyEventListener.class}, new Object[] {listener
+        });
         assertEquals(1, events.size());
         assertEquals(TopologyEvent.Type.TOPOLOGY_INIT, events.get(0).getType());
         assertNotNull(events.get(0).getNewView());
         assertNull(events.get(0).getOldView());
     }
 
-    @Test public void testListenerAlwaysOffline() throws Exception {
+    @Test
+    public void testListenerAlwaysOffline() throws Exception {
         final DiscoveryService service = this.createService(true);
 
         final List<TopologyEvent> events = new ArrayList<TopologyEvent>();
@@ -176,12 +183,14 @@ public class NoClusterDiscoveryServiceTest {
                 events.add(event);
             }
         };
-        invoke(service, "bindTopologyEventListener", new Class[] {TopologyEventListener.class}, new Object[] {listener});
+        invoke(service, "bindTopologyEventListener", new Class[] {TopologyEventListener.class}, new Object[] {listener
+        });
         // When always offline is true, no events should be sent
         assertEquals(0, events.size());
     }
 
-    @Test public void testPropertyChanges() throws Exception {
+    @Test
+    public void testPropertyChanges() throws Exception {
         final DiscoveryService service = this.createService();
 
         final List<TopologyEvent> events = new ArrayList<TopologyEvent>();
@@ -193,20 +202,21 @@ public class NoClusterDiscoveryServiceTest {
                 events.add(event);
             }
         };
-        invoke(service, "bindTopologyEventListener", new Class[] {TopologyEventListener.class}, new Object[] {listener});
+        invoke(service, "bindTopologyEventListener", new Class[] {TopologyEventListener.class}, new Object[] {listener
+        });
         events.clear();
 
         final PropertyProvider provider = new PropertyProvider() {
 
             @Override
             public String getProperty(final String name) {
-                if ( "a".equals(name) ) {
+                if ("a".equals(name)) {
                     return "1";
                 }
-                if ( "b".equals(name) ) {
+                if ("b".equals(name)) {
                     return "2";
                 }
-                if ( "c".equals(name) ) {
+                if ("c".equals(name)) {
                     return "3";
                 }
                 return null;
@@ -216,7 +226,9 @@ public class NoClusterDiscoveryServiceTest {
         properties.put(PropertyProvider.PROPERTY_PROPERTIES, new String[] {"a", "b", "c"});
         properties.put(Constants.SERVICE_ID, 1L);
 
-        invoke(service, "bindPropertyProvider", new Class[] {PropertyProvider.class, Map.class}, new Object[] {provider, properties});
+        invoke(service, "bindPropertyProvider", new Class[] {PropertyProvider.class, Map.class}, new Object[] {
+            provider, properties
+        });
 
         assertEquals(1, events.size());
         assertEquals(TopologyEvent.Type.PROPERTIES_CHANGED, events.get(0).getType());
@@ -234,7 +246,9 @@ public class NoClusterDiscoveryServiceTest {
         assertNull(events.get(0).getOldView().getLocalInstance().getProperty("c"));
 
         events.clear();
-        invoke(service, "unbindPropertyProvider", new Class[] {PropertyProvider.class, Map.class}, new Object[] {provider, properties});
+        invoke(service, "unbindPropertyProvider", new Class[] {PropertyProvider.class, Map.class}, new Object[] {
+            provider, properties
+        });
         assertEquals(1, events.size());
         assertEquals(TopologyEvent.Type.PROPERTIES_CHANGED, events.get(0).getType());
         assertNotNull(events.get(0).getNewView());

@@ -57,7 +57,7 @@ public class TopologyViewImpl implements TopologyView {
 
     @Override
     public Set<InstanceDescription> findInstances(final InstanceFilter picker) {
-        if ( picker.accept(this.myInstance) ) {
+        if (picker.accept(this.myInstance)) {
             return getInstances();
         }
         return Collections.emptySet();

@@ -25,14 +25,13 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
  * Configuration interface for the standalone discovery service.
  */
 @ObjectClassDefinition(
-    name = "Apache Sling Discovery Standalone Configuration",
-    description = "Configuration for the standalone discovery service implementation"
-)
+        name = "Apache Sling Discovery Standalone Configuration",
+        description = "Configuration for the standalone discovery service implementation")
 public @interface Config {
 
     @AttributeDefinition(
-        name = "Always Offline",
-        description = "When enabled, it will never report a valid topology and no TOPOLOGY_INIT events will be sent to TopologyEventListeners."
-    )
+            name = "Always Offline",
+            description =
+                    "When enabled, it will never report a valid topology and no TOPOLOGY_INIT events will be sent to TopologyEventListeners.")
     boolean always_offline() default false;
 }
